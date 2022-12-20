@@ -3,6 +3,22 @@ import { View, StyleSheet, Image, Text, Alert } from 'react-native'
 import { TextInput } from 'react-native-gesture-handler'
 import CustButton from '../customComponents/CustomButton'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import SQLite from 'react-native-sqlite-storage'
+
+
+const db = SQLite.openDatabase(
+    {
+        name: 'MainDB',
+        location: 'default'
+    },
+    () => {
+        //return if success
+
+    },
+    error => {
+        console.log(error)
+    }
+)
 
 export default function Login({ navigation }) {
 
@@ -10,16 +26,41 @@ export default function Login({ navigation }) {
     const [age, setAge] = useState('')
 
     useEffect(() => {
-        getData()
+        createTable();
+        getData();
     }, [])
 
+    const createTable = () => {
+        db.transaction((tx) => {
+            tx.executeSql(
+                "CREATE TABLE IF NOT EXISTS " +
+                "USERS " +
+                "(ID INTEGER PRIMARY KEY AUTOINCREMENT,  Name TEXT, Age INTEGER);"
+            )
+        }
+
+        )
+    }
 
     const getData = () => {
         try {
-            AsyncStorage.getItem('User').then(value => {
-                if (value != null) {
-                    navigation.navigate('Home')
-                }
+            // AsyncStorage.getItem('User').then(value => {
+            //     if (value != null) {
+            //         navigation.navigate('Home')
+            //     }
+            // })
+            db.transaction((tx) => {
+                tx.executeSql(
+                    "SELECT name, age from USERS where id = 1",
+                    [],
+                    (tx, results) => {
+                        var len = results.rows.length;
+                        if (len > 0) {
+                            navigation.navigate("Home")
+
+                        }
+                    }
+                )
             })
         } catch (error) {
             console.log(error)
@@ -32,11 +73,29 @@ export default function Login({ navigation }) {
             Alert.alert('Warning', 'Please write your data')
         } else {
             try {
-                var user = {
-                    Nasme: name,
-                    Age: age
-                }
-                await AsyncStorage.setItem('User', JSON.stringify(user));
+                // var user = {
+                //     Nasme: name,
+                //     Age: age
+                // }
+                // await AsyncStorage.setItem('User', JSON.stringify(user));
+
+                // await db.transaction(async (tx) => {
+                //     tx.executeSql(
+                //         "INSERT INTO USERS (NAME, AGE) VALUES ('"+name+"'+"+age+")"
+                //     )
+                // })
+
+                await db.transaction(async (tx) => {
+                    tx.executeSql(
+                        "INSERT INTO USERS (NAME, AGE) VALUES (?,?)",
+                        [name, age]
+                    )
+                })
+                await db.transaction(async (tx) => {
+                    tx.executeSql(
+                        "INSERT INTO USERS (NAME, AGE) VALUES ('" + name + "'+" + age + ")"
+                    )
+                })
                 navigation.navigate('Home')
 
             } catch (error) {

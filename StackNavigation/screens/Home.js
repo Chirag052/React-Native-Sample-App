@@ -9,8 +9,21 @@ import {
 import { TextInput } from 'react-native-gesture-handler';
 import Pressable from 'react-native/Libraries/Components/Pressable/Pressable';
 import CustButton from '../customComponents/CustomButton';
+import SQLite from 'react-native-sqlite-storage'
 
+const db = SQLite.openDatabase(
+    {
+        name: 'MainDB',
+        location: 'default'
+    },
+    () => {
+        //return if success
 
+    },
+    error => {
+        console.log(error)
+    }
+)
 
 export default function Home({ navigation }) {
 
@@ -25,12 +38,28 @@ export default function Home({ navigation }) {
 
     const getData = () => {
         try {
-            AsyncStorage.getItem('User').then(value => {
-                if (value != null) {
-                    let user = JSON.parse(value)
-                    setName(user.Nasme)
-                    setAge(user.Age)
-                }
+            // AsyncStorage.getItem('User').then(value => {
+            //     if (value != null) {
+            //         let user = JSON.parse(value)
+            //         setName(user.Nasme)
+            //         setAge(user.Age)
+            //     }
+            // })
+            db.transaction((tx) => {
+                tx.executeSql(
+                    "SELECT name, age from USERS where id = 1",
+                    [],
+                    (tx, results) => {
+                        var len = results.rows.length;
+                        if (len > 0) {
+                            var userName = results.rows.item(0).Name;
+                            var userAge = results.rows.item(0).Age;
+                            setName(userName)
+                            setAge(userAge)
+
+                        }
+                    }
+                )
             })
         } catch (error) {
             console.log(error)
